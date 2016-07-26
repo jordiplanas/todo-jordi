@@ -54,12 +54,41 @@ app.delete('/todos/:id', function (req,res){
 	var deleteId=parseInt(req.params.id,10);
 	var matched= _.findWhere(todos,{id:deleteId});
 	if(!matched){
-		res.status(404.json({"error":"no ttod found with id"}))
+		res.status(404).json({"error":"no ttod found with id"});
 	}else{
 	todos=_.without(todos,matched);
 	res.json(matched);
 	}
 
+
+});
+//APA PUT
+app.put('/todos/:id', function (req,res){
+		var deleteId=parseInt(req.params.id,10);
+		var matched= _.findWhere(todos,{id:deleteId});
+		var body=_.pick(req.body,'description','completed');
+		var validAtributes={};
+		if(!matched){
+			return res.status(404).send();
+		}
+	
+		if(	body.hasOwnProperty('completed')&& _.isBoolean(body.completed)){
+			validAtributes.completed=body.completed;
+		}else if(body.hasOwnProperty('completed')){
+			return res.status(404).send();
+
+		}
+
+		if(	body.hasOwnProperty('description')&& _.isString(body.description)&&body.description.trim().length>0){
+			validAtributes.description=body.description;
+		}else if(body.hasOwnProperty('description')){
+			return res.status(404).send();
+		}
+
+        _.extend(matched,validAtributes);
+        res.json(matched);
+
+		
 
 });
 
