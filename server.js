@@ -19,12 +19,17 @@ app.get('/todos', function (req,res){
 	var filtered=todos;
 	if(queryParams.hasOwnProperty('completed')&&queryParams.completed==="true"){
 		filtered= _.where(filtered, {"completed": true});
-		res.json(filtered);
-	}else if(queryParams.hasOwnProperty('completed')&&queryParams.completed==="false"){
+			}else if(queryParams.hasOwnProperty('completed')&&queryParams.completed==="false"){
 		filtered= _.where(filtered, {"completed": false});
-		res.json(filtered);
+		
 	}
-
+	if(queryParams.hasOwnProperty('q')&&_.isString(queryParams.q)&& queryParams.q.trim().length>0){
+		var keyword=queryParams.q;
+		filtered=_.filter(filtered, function(todo){ 
+			return todo.description.toLowerCase().indexOf(keyword.toLowerCase()) > -1;
+		});
+}
+		res.json(filtered);
 	
 });
 
@@ -104,4 +109,4 @@ app.put('/todos/:id', function (req,res){
 
 app.listen(PORT,function(){
 	console.log('Express listening  on : '+PORT);
-})
+});
