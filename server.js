@@ -179,13 +179,18 @@ app.put('/todos/:id', function(req, res) {
 app.post('/users', function(req, res) {
 	var body = _.pick(req.body, 'email', 'password');
 	db.user.create(body).then(function(user) {
-		return res.status(200).json(user.toJSON());
+		return res.status(200).json(user.toPublicJSON());
 		//console.log(todo.asJSON());
 	}, function(e) {
 		return res.status(400).json(e);
 	});
 
 });
+
+app.get('users', function(req, res){
+
+
+})
 
 
 
