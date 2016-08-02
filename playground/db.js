@@ -18,71 +18,38 @@ var Todo = sequelize.define('todo', {
 		defaultValue: false
 	}
 });
+var User=sequelize.define('user',{
+	email:{
+		type:Sequelize.STRING
+	}
+});
+
+Todo.belongsTo(User);
+User.hasMany(Todo);
 
 sequelize.sync({
-	force: true
+	//force: true
 }).then(function() {
 	console.log('everithing is syncro');
-	/*Todo.create({
-		description: "Walk dog",
-		completed: false
-	}).then(function(todo) {
-		console.log('finished');
-	}).catch( function (e){
-		console.log(e);
+	User.findById(1).then(function(user){
+		user.getTodos({where:{completed:false}}).then(function(todos){
+			todos.forEach(function(todo){
+				console.log(todo.toJSON());
+			})
+		})
 	})
-	Todo.create({
-		description: " pillar pokemons tochus",
-		completed: false
-	}).then(function(todo) {
-		return Todo.create({
-			description: "pillar un pikachu",
-			completed: true,
-		});
-	}).then(function() {
-			var complet = Todo.findAll({
-				where: {
-					id: 1
-				}
-			}).then(function(todo) {
-					if (todo) {
-						todo.forEach(function(t){
-							console.log(t.toJSON());
-						});
+// User.create({
+// 	email: "jordi@com.com"
+// }).then(function(){
+// 	return Todo.create({
+// 		description:"clean yard"
+// 	});
+// }).then(function(todo){
+// 	User.findById(1).then(function(user){
+// 		user.addTodo(todo);
 
-						
-					}
-					
-				
-			});
+// 	});
 
-
-	});*/
-Todo.create({
- description: "pillar pokebols",
- completed:true
-
-}).then(function (todo){
-	return Todo.create({
-		description: "pillar Droja",
-		completed:false
-	})
-})
-
-Todo.findAll({
-			where: {
-				completed: true
-			}
-		}).then( function (ts){
-			if(ts){
-				ts.forEach( function(t){
-					console.log(t.toJSON())
-				});
-			}
-			
-		});
-
-
-
+// })
 
 });

@@ -3,7 +3,7 @@ var bodyparser = require('body-parser');
 var _ = require("underscore")
 var db = require('./db.js');
 var bcrypt = require('bcrypt');
-var middleware=require('./middleware.js')(db);
+var middleware = require('./middleware.js')(db);
 
 var app = express();
 var PORT = process.env.PORT || 4000;
@@ -18,9 +18,12 @@ app.get('/', function(req, res) {
 
 ///GET/TODOS
 
-app.get('/todos',middleware.requireAuthentication, function(req, res) {
+app.get('/todos', middleware.requireAuthentication, function(req, res) {
 	var queryParams = req.query;
-	var where = {};
+	var where = {
+		userId:req.user.get('id')
+
+	};
 
 	if (queryParams.hasOwnProperty('completed') && queryParams.completed === "true") {
 		where.completed = true;
@@ -62,19 +65,15 @@ app.get('/todos',middleware.requireAuthentication, function(req, res) {
 });
 
 //GET /TODOS/:ID
-app.get('/todos/:id', middleware.requireAuthentication,function(req, res) {
+app.get('/todos/:id', middleware.requireAuthentication, function(req, res) {
 
 	var todoId = parseInt(req.params.id, 10);
-	// var matched = _.findWhere(todos, {
-	// 	id: todoId
-	// });
 
-	// if (matched) {
-	// 	res.json(matched);
-	// } else {
-	// 	res.status(404).send();
-	// }
-	db.todo.findById(todoId).then(function(todo) {
+	db.todo.findOne({where:{
+		id:todoId,
+		userId:req.user.get('id')
+
+	}}).then(function(todo) {
 		if (!!todo) {
 			res.status(200).json(todo.toJSON());
 		} else {
@@ -87,37 +86,30 @@ app.get('/todos/:id', middleware.requireAuthentication,function(req, res) {
 });
 
 ////POST /todos
-app.post('/todos', middleware.requireAuthentication,function(req, res) {
+app.post('/todos', middleware.requireAuthentication, function(req, res) {
 	var body = _.pick(req.body, 'description', 'completed');
 	db.todo.create(body).then(function(todo) {
-		return res.status(200).json(todo.toJSON());
-		//console.log(todo.asJSON());
+		//return res.status(200).json(todo.toJSON());
+		req.user.addTodo(todo).then(function() {
+			return todo.reload();
+		}).then(function(todo) {
+			res.json(todo.toJSON());
+		});
 	}, function(e) {
 		return res.status(400).json(e);
 	});
 
 
 
-	// if (!_.isBoolean(body.completed) || !_.isString(body.description) || body.description.trim().length === 0) {
-	// 	return res.status(400).send();
-	// }
-	// body.description = body.description.trim();
-
-	// body.id = id++;
-	// //console.log(typeof body);
-
-	// todos.push(body);
-	// console.log(todos);
-	// res.json(body);
-
 });
 //DELETE /TODOS/:ID
-app.delete('/todos/:id', middleware.requireAuthentication,function(req, res) {
+app.delete('/todos/:id', middleware.requireAuthentication, function(req, res) {
 	var deleteId = parseInt(req.params.id, 10);
 
 	db.todo.destroy({
 			where: {
-				id: deleteId
+				id: deleteId,
+				userId:req.user.get('id')
 			}
 		}).then(function(rowdeleted) {
 			if (rowdeleted === 0) {
@@ -160,7 +152,11 @@ app.put('/todos/:id', middleware.requireAuthentication, function(req, res) {
 		atributes.description = body.description;
 	}
 
-	db.todo.findById(todoId).then(function(todo) {
+	db.todo.findOne({
+		where:{
+			id:todoId,
+			userId:req.user.get('id')
+		}}).then(function(todo) {
 			if (todo) {
 				todo.update(atributes).then(function(todo) {
 					res.json(todo.toJSON());
@@ -195,24 +191,26 @@ app.post('/users', function(req, res) {
 app.post('/users/login', function(req, res) {
 
 	var body = _.pick(req.body, 'email', 'password');
-	db.user.authenticate(body).then(function(user){
-		var token= user.generateToken('authentication');
-		if(token){
-			res.header('Auth',token).json(user.toPublicJSON());
-		}else{
+	db.user.authenticate(body).then(function(user) {
+			var token = user.generateToken('authentication');
+			if (token) {
+				res.header('Auth', token).json(user.toPublicJSON());
+			} else {
+				res.status(401).send();
+			}
+
+		},
+		function(e) {
 			res.status(401).send();
-		}
-		
-	}, 
-		function(e){
-		   res.status(401).send();
-	});
-	
+		});
+
 });
 
 
 
-db.sequelize.sync({force:true}).then(function() {
+db.sequelize.sync({
+	//force: true
+}).then(function() {
 	app.listen(PORT, function() {
 		console.log('Express listening  on : ' + PORT);
 	});
